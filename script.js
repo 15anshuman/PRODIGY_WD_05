@@ -8,7 +8,8 @@ function fetchWeather() {
     }
 
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=metric&appid=${API_KEY}`;
-    console.log("Fetching URL:", url); // Debugging log
+    console.log("Fetching URL:", url); 
+    showLoading(); 
     getWeatherData(url);
 }
 
@@ -17,11 +18,14 @@ function fetchWeatherByLocation() {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
+                console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
                 const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`;
-                getWeatherData(url);
+                showLoading();
+                getWeatherData(url, latitude, longitude);
             },
-            () => {
-                alert("Unable to retrieve your location.");
+            (error) => {
+                console.error("Geolocation error:", error.message);
+                alert("Unable to retrieve your location. Please allow location access.");
             }
         );
     } else {
@@ -29,7 +33,7 @@ function fetchWeatherByLocation() {
     }
 }
 
-async function getWeatherData(url) {
+async function getWeatherData(url, latitude = null, longitude = null) {
     try {
         const response = await fetch(url);
         if (!response.ok) {
@@ -41,22 +45,39 @@ async function getWeatherData(url) {
         }
 
         const data = await response.json();
-        displayWeather(data);
+        displayWeather(data, latitude, longitude);
     } catch (error) {
+        hideLoading(); 
         alert(error.message);
     }
 }
 
-function displayWeather(data) {
+function displayWeather(data, latitude = null, longitude = null) {
     const weatherInfo = document.getElementById("weather-info");
     const { name, weather, main } = data;
     const { description, icon } = weather[0];
+
+    const locationName = name ? name : `Lat: ${latitude}, Lon: ${longitude}`;
+
     weatherInfo.innerHTML = `
-        <h2>${name}</h2>
+        <h2>${locationName}</h2>
         <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${description}">
         <p>${description.toUpperCase()}</p>
         <p>Temperature: ${main.temp}°C</p>
         <p>Feels Like: ${main.feels_like}°C</p>
         <p>Humidity: ${main.humidity}%</p>
     `;
+    hideLoading(); 
+}
+
+function showLoading() {
+    const weatherInfo = document.getElementById("weather-info");
+    weatherInfo.innerHTML = `<p>Loading...</p>`;
+}
+
+function hideLoading() {
+    const weatherInfo = document.getElementById("weather-info");
+    if (weatherInfo.innerHTML === `<p>Loading...</p>`) {
+        weatherInfo.innerHTML = "";
+    }
 }
