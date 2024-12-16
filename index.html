@@ -1,83 +1,77 @@
-const API_KEY = "41c953e75dba832f388f6ceb74adf093";
-
-function fetchWeather() {
-    const location = document.getElementById("location").value.trim();
-    if (!location) {
-        alert("Please enter a location.");
-        return;
-    }
-
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=metric&appid=${API_KEY}`;
-    console.log("Fetching URL:", url); 
-    showLoading(); 
-    getWeatherData(url);
-}
-
-function fetchWeatherByLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
-                const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`;
-                showLoading();
-                getWeatherData(url, latitude, longitude);
-            },
-            (error) => {
-                console.error("Geolocation error:", error.message);
-                alert("Unable to retrieve your location. Please allow location access.");
-            }
-        );
-    } else {
-        alert("Geolocation is not supported by this browser.");
-    }
-}
-
-async function getWeatherData(url, latitude = null, longitude = null) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error("Location not found. Please enter a valid city.");
-            } else {
-                throw new Error("An error occurred. Please try again later.");
-            }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #87CEEB;
+            color: #333;
         }
-
-        const data = await response.json();
-        displayWeather(data, latitude, longitude);
-    } catch (error) {
-        hideLoading(); 
-        alert(error.message);
-    }
-}
-
-function displayWeather(data, latitude = null, longitude = null) {
-    const weatherInfo = document.getElementById("weather-info");
-    const { name, weather, main } = data;
-    const { description, icon } = weather[0];
-
-    const locationName = name ? name : `Lat: ${latitude}, Lon: ${longitude}`;
-
-    weatherInfo.innerHTML = `
-        <h2>${locationName}</h2>
-        <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${description}">
-        <p>${description.toUpperCase()}</p>
-        <p>Temperature: ${main.temp}°C</p>
-        <p>Feels Like: ${main.feels_like}°C</p>
-        <p>Humidity: ${main.humidity}%</p>
-    `;
-    hideLoading(); 
-}
-
-function showLoading() {
-    const weatherInfo = document.getElementById("weather-info");
-    weatherInfo.innerHTML = `<p>Loading...</p>`;
-}
-
-function hideLoading() {
-    const weatherInfo = document.getElementById("weather-info");
-    if (weatherInfo.innerHTML === `<p>Loading...</p>`) {
-        weatherInfo.innerHTML = "";
-    }
-}
+        .weather-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 90%;
+        }
+        h1 {
+            color: #007BFF;
+            margin-bottom: 20px;
+        }
+        input {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: calc(100% - 22px);
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #weather-info {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        img {
+            width: 80px;
+            height: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-container">
+        <h1>Weather App</h1>
+        <input type="text" id="location" placeholder="Enter location (e.g., London)">
+        <div>
+            <button onclick="fetchWeather()">Get Weather</button>
+            <button onclick="fetchWeatherByLocation()">Use My Location</button>
+        </div>
+        <div id="weather-info">
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
