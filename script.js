@@ -6,34 +6,49 @@ function fetchWeather() {
         alert("Please enter a location.");
         return;
     }
-
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=metric&appid=${API_KEY}`;
-    console.log("Fetching URL:", url); 
-    showLoading(); 
+    console.log("Fetching Weather for:", location);
     getWeatherData(url);
 }
 
 function fetchWeatherByLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
                 const { latitude, longitude } = position.coords;
-                console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
-                const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`;
-                showLoading();
-                getWeatherData(url, latitude, longitude);
+
+                console.log("Latitude:", latitude, "Longitude:", longitude); 
+
+                const reverseGeocodeURL = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
+
+                try {
+                    const response = await fetch(reverseGeocodeURL);
+                    const data = await response.json();
+
+                    const city = data.address.city || data.address.town || data.address.village || "Unknown Location";
+
+                    console.log("Detected City:", city);
+
+                    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${API_KEY}`;
+                    getWeatherData(url);
+
+                } catch (error) {
+                    console.error("Error fetching reverse geocode data:", error);
+                    alert("Could not determine your location accurately. Please try again.");
+                }
             },
             (error) => {
-                console.error("Geolocation error:", error.message);
-                alert("Unable to retrieve your location. Please allow location access.");
-            }
+                alert("Unable to retrieve your location. Make sure location services are enabled.");
+                console.error(error);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     } else {
         alert("Geolocation is not supported by this browser.");
     }
 }
 
-async function getWeatherData(url, latitude = null, longitude = null) {
+async function getWeatherData(url) {
     try {
         const response = await fetch(url);
         if (!response.ok) {
@@ -45,39 +60,23 @@ async function getWeatherData(url, latitude = null, longitude = null) {
         }
 
         const data = await response.json();
-        displayWeather(data, latitude, longitude);
+        displayWeather(data);
     } catch (error) {
-        hideLoading(); 
         alert(error.message);
     }
 }
 
-function displayWeather(data, latitude = null, longitude = null) {
+function displayWeather(data) {
     const weatherInfo = document.getElementById("weather-info");
     const { name, weather, main } = data;
     const { description, icon } = weather[0];
-
-    const locationName = name ? name : `Lat: ${latitude}, Lon: ${longitude}`;
-
     weatherInfo.innerHTML = `
-        <h2>${locationName}</h2>
+        <h2>${name}</h2>
         <img src="https://openweathermap.org/img/wn/${icon}@2x.png" alt="${description}">
         <p>${description.toUpperCase()}</p>
         <p>Temperature: ${main.temp}°C</p>
         <p>Feels Like: ${main.feels_like}°C</p>
         <p>Humidity: ${main.humidity}%</p>
     `;
-    hideLoading(); 
 }
 
-function showLoading() {
-    const weatherInfo = document.getElementById("weather-info");
-    weatherInfo.innerHTML = `<p>Loading...</p>`;
-}
-
-function hideLoading() {
-    const weatherInfo = document.getElementById("weather-info");
-    if (weatherInfo.innerHTML === `<p>Loading...</p>`) {
-        weatherInfo.innerHTML = "";
-    }
-}
